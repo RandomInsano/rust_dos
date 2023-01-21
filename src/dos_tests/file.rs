@@ -36,5 +36,4 @@ pub(crate) fn directory_test() {
     print!("Deleting folder {path}... ");
     dos::file::Directory::remove(path).unwrap();
     println!("Done");
-
 }
