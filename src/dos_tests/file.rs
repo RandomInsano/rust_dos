@@ -24,3 +24,17 @@ pub(crate) fn file_attribute_test() {
 
     println!("Long filename {:?}", dos::file::File::attributes("Really long name or something"));
 }
+
+#[allow(dead_code)]
+pub(crate) fn directory_test() {
+    let path = "C:\\1A2B3C4D";
+
+    print!("Creating folder {path}... ");
+    dos::file::Directory::make(path).unwrap();
+    println!("Done");
+
+    print!("Deleting folder {path}... ");
+    dos::file::Directory::remove(path).unwrap();
+    println!("Done");
+
+}
