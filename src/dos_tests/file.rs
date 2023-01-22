@@ -27,13 +27,22 @@ pub(crate) fn file_attribute_test() {
 
 #[allow(dead_code)]
 pub(crate) fn directory_test() {
-    let path = "C:\\1A2B3C4D";
+    let old_path = "C:\\";
+    let new_path = "C:\\1A2B3C4D";
 
-    print!("Creating folder {path}... ");
-    dos::file::Directory::make(path).unwrap();
+    print!("Creating folder {new_path}... ");
+    dos::file::Directory::make(new_path).unwrap();
     println!("Done");
 
-    print!("Deleting folder {path}... ");
-    dos::file::Directory::remove(path).unwrap();
+    print!("Changing to folder {new_path}... ");
+    dos::file::Directory::change_current(new_path).unwrap();
+    println!("Done");
+
+    print!("Changing to folder {old_path}... ");
+    dos::file::Directory::change_current(old_path).unwrap();
+    println!("Done");
+
+    print!("Deleting folder {new_path}... ");
+    dos::file::Directory::remove(new_path).unwrap();
     println!("Done");
 }
