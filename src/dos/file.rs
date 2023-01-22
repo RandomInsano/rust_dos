@@ -52,7 +52,7 @@ bitflags! {
 /// routine differs. This abstracts all of the common code in one spot for
 /// easier usage and maintenance
 /// 
-/// Returns (ax, cx) registers
+/// Returns (ax, cx) registers or an ErrorCode
 pub fn file_folder_helper(filename: &str, mode: u8, operation: u8) -> Result<(u16, u16), ErrorCode> {
     let mut error_result: u8;
     let mut error_code: u16;
@@ -206,6 +206,12 @@ pub struct Directory {}
 impl Directory {
     pub fn make(path: &str) -> Result<(), ErrorCode> {
         file_folder_helper(path, 0x00, 0x39)?;
+
+        Ok(())
+    }
+
+    pub fn change_current(path: &str) -> Result<(), ErrorCode> {
+        file_folder_helper(path, 0x00, 0x3b)?;
 
         Ok(())
     }
