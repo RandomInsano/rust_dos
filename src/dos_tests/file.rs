@@ -1,4 +1,4 @@
-use rust_dos::*;
+use rust_dos::{*, dos::error_code::ErrorCode};
 
 #[allow(dead_code)]
 pub(crate) fn file_read_test() {
@@ -23,6 +23,15 @@ pub(crate) fn file_attribute_test() {
     println!("Attributes: {:?}", attributes);
 
     println!("Long filename {:?}", dos::file::File::attributes("Really long name or something"));
+
+    let test_file = dos::file::File::open("C:\\AUTOEXEC.BAT");
+    let test_file = test_file.unwrap_or(dos::file::File::open("README.md").unwrap());
+    let (date, time) = test_file.last_write().unwrap();
+
+    let test_file = dos::file::File::open("BAD FILE");
+    assert_eq!(test_file.err().unwrap(), ErrorCode::FileNotFound);
+
+    println!("File modified on {:?} at {:?}", date, time);
 }
 
 #[allow(dead_code)]

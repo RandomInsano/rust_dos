@@ -1,7 +1,7 @@
 use core::convert::TryFrom;
 use core::fmt;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ErrorCode {
     Success = 0,
     InvalidFunctionNumber = 1,

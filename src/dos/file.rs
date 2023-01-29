@@ -3,6 +3,8 @@ use core::arch::asm;
 use core::cmp::min;
 use crate::dos::error_code::ErrorCode;
 
+use super::datetime::{Date, Time};
+
 extern crate rlibc;
 
 #[allow(dead_code)]
@@ -192,6 +194,43 @@ impl File {
     pub fn attributes(filename: &str) -> Result<FileAttributes, ErrorCode> {
         let (_, attributes) = file_folder_helper(filename,  0x00, 0x43)?;
         Ok(FileAttributes::from_bits_truncate(attributes))
+    }
+
+    pub fn last_write(&self) -> Result<(Date, Time), ErrorCode> {
+        let mut date = Date::default();
+        let mut time = Time::default();
+        let date_value: u16;
+        let time_value: u16;
+        let error_result: u8;
+        let error_code: u16;
+
+        unsafe {
+            asm!(
+                "mov al, 0x00",
+                "mov ah, 0x57",
+                "int 0x21",
+                "setc bh",
+                in ("bx") self.handle,
+                out ("ax") error_code,
+                lateout ("bh") error_result,
+                out ("cx") time_value,
+                out ("dx") date_value,
+            );
+        }
+
+        time.second = ((time_value & 0b00000000_00011111) >> 0) as u8 * 2;
+        time.minute = ((time_value & 0b00000111_11100000) >> 5) as u8;
+        time.hour =   ((time_value & 0b11111000_00011111) >> 11) as u8;
+
+        date.day   = ((date_value & 0b00000000_00011111) >> 0) as u8;
+        date.month = ((date_value & 0b00000001_11100000) >> 5) as u8;
+        date.year  = ((date_value & 0b11111110_00000000) >> 9) + 1980;
+
+        if error_result != 0 {
+            return Err(ErrorCode::from_u8(error_code as u8).unwrap_or(ErrorCode::UnknownError));
+        }
+
+        Ok((date, time))
     }
 }
 
