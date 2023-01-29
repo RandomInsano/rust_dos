@@ -12,6 +12,7 @@ use crate::dos_tests::datetime::datetime_test;
 use crate::dos_tests::file::file_read_test;
 use crate::dos_tests::file::file_attribute_test;
 use crate::dos_tests::file::directory_test;
+use crate::dos_tests::misc::misc_test;
 use crate::dos_tests::console::print_test;
 
 entry!(main);
@@ -27,6 +28,8 @@ fn main() {
     directory_test();
     println!("-- Date/time tests");
     datetime_test();
+    println!("-- Misc tests");
+    misc_test();
 
     println!("-- Print tests");
     print_test();

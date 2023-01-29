@@ -26,7 +26,7 @@ Currently implemented DOS INT 21 functions:
 | 2C ✓ | Get system time                    | 54   | Get verify flag                    |
 | 2D ✓ | Set system time                    | 56   | Rename file                        |
 | 2E   | Set verify flag                    | 57   | Get/set file date                  |
-| 30   | Get DOS version                    |      |                                    |
+| 30 ✓ | Get DOS version                    |      |                                    |
 
 Legend:
 ✓ = All features implemented
