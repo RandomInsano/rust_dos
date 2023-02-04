@@ -35,7 +35,7 @@ Legend:
 Reference material:
 * [DOS INT 21h - DOS Function Codes](http://spike.scu.edu.au/~barry/interrupts.html#ah36)
 * [Registers in x86 Assembly](https://www.cs.uaf.edu/2017/fall/cs301/lecture/09_11_registers.html)
-
+* [MS-DOS Version 4.0 Programmer's Reference](https://www.pcjs.org/documents/books/mspl13/msdos/dosref40/)
 
 ## Building
 You need a binutils and llvm-tools-preview.
