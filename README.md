@@ -3,40 +3,6 @@
 It is possible to create a DOS executable or 1st stage bootloader with Rust.  
 This is a quick demo of creating COM executable for DOS.
 
-Currently implemented DOS INT 21 functions:
-
-| Code | Description                        | Code | Description
-|------|------------------------------------|------|------------------------------------|
-| 01 ✓ | Read character from STDIN          | 35   | Get interrupt vector               |
-| 02 ✓ | Write character to STDOUT          | 36   | Get free disk space                |
-| 05   | Write character to printer         | 39 ✓ | Create subdirectory                |
-| 06   | Console Input/Output               | 3A ✓ | Remove subdirectory                |
-| 07   | Direct character read, no echo     | 3B ✓ | Change current working directory   |
-| 08   | Char read from STDIN, no echo      | 3C   | Create file                        |
-| 09 ✓ | Write string to STDOUT             | 3D ~ | Open file                          |
-| 0A   | Buffered input                     | 3E ✓ | Close file                         |
-| 0B   | Get STDIN status                   | 3F ✓ | Read file                          |
-| 0C   | Flush buffer from STDIN            | 40 ✓ | Write file                         |
-| 0D   | Disk reset                         | 41   | Delete file                        |
-| 0E   | Select default drive               | 42 ✓ | Seek file                          |
-| 19   | Get current default drive          | 43 ~ | Get/set file attributes            |
-| 25   | Set interrupt vector               | 47   | Get current directory              |
-| 2A ✓ | Get system date                    | 4C ✓ | Exit program                       |
-| 2B ✓ | Set system date                    | 4D   | Get return code                    |
-| 2C ✓ | Get system time                    | 54   | Get verify flag                    |
-| 2D ✓ | Set system time                    | 56   | Rename file                        |
-| 2E   | Set verify flag                    | 57 ~ | Get/set file date                  |
-| 30 ✓ | Get DOS version                    |      |                                    |
-
-Legend:
-✓ = All features implemented
-~ = Partial features implemented
-
-Reference material:
-* [DOS INT 21h - DOS Function Codes](http://spike.scu.edu.au/~barry/interrupts.html#ah36)
-* [Registers in x86 Assembly](https://www.cs.uaf.edu/2017/fall/cs301/lecture/09_11_registers.html)
-* [MS-DOS Version 4.0 Programmer's Reference](https://www.pcjs.org/documents/books/mspl13/msdos/dosref40/)
-
 ## Building
 You need a binutils and llvm-tools-preview.
 
