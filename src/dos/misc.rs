@@ -26,6 +26,13 @@ impl core::fmt::Debug for VersionInfo {
     }
 }
 
+pub fn ptr_to_segments(value: u32) -> (u16, u16) {
+    let segment = value / 16;
+    let offset = value & 0xf;
+
+    (segment as u16, offset as u16)
+}
+
 pub fn dos_version() -> VersionInfo {
     let mut version_info = VersionInfo::default();
 

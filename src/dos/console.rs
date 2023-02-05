@@ -1,10 +1,11 @@
 use core::arch::asm;
-use core::cmp::min;
 use core::fmt::{self, Write};
 
-use super::error_code::ErrorCode;
+use alloc::string::String;
+use alloc::vec::Vec;
 
-const MAX_PRINT_STRING: usize = 256;
+use super::error_code::ErrorCode;
+use super::misc::ptr_to_segments;
 
 #[macro_export]
 macro_rules! print {
@@ -42,42 +43,130 @@ impl Write for DosWriter {
 /// This wraps DOS' print function (0x90)
 /// 
 /// DOS's string writing expects the string to end with "$" instead of a null
-/// charater. This function fails with InvalidFormat if the string doesn't end
-/// in a dollar sign. Also, because the DOS interrupt requires the data segment
-/// register ("DS", look up memory segmentation on x86) this function allocates
-/// 255 bytes on the stack and is limited to that many characters in one run.
-/// If there's a safe way to change DS at the rust level, please open a PR!
+/// charater. There is no way to print a $ from official documentation. This
+/// function fails with InvalidFormat if the string doesn't contain a dollar
+/// sign.
 /// 
 /// Note that while this won't crash, it does no checks that the string provided
 /// is truely ascii and will happily dump whatever to the console
 pub fn print(string: &str) -> Result<(), ErrorCode> {
-
-    let mut buffer = [0; MAX_PRINT_STRING];
-    let size = min(buffer.len(), string.len());
-
-    buffer[0..size].copy_from_slice(string[0..size].as_bytes());
-
-    if !string.ends_with("$") {
+    // TODO: Learn how to do this at compile time with macros instead?
+    if !string.contains("$") {
         return Err(ErrorCode::InvalidFormat)
     }
 
+    let (segment, offset) = ptr_to_segments(string.as_ptr() as u32);
+
     unsafe {
         asm!(
-            "int 0x21",
-            in("ah") 0x09_u8,
-            in("dx") buffer.as_ptr() as u16,
+            "mov ax, ds",
+            "push ax",          // Preserve data segment register
+            "add ax, cx",       // Offset the segment. I have no idea why
+            "mov ds, ax",
+
+            "mov ah, 0x09",     
+            "int 0x21",         // Call interrupt handler
+
+            "pop ax",           // Restore data segment register
+            "mov ds, ax",
+
+            in("cx") segment,
+            in("dx") offset,
         )
     }
 
     Ok(())
 }
 
-pub fn printc(ch: u8) {
+pub fn printc(character: u8) {
     unsafe {
         asm!(
             "int 0x21",
             in("ah") 0x02_u8,
-            in("dl") ch
+            in("dl") character
         ) 
     }
+}
+
+/// Read a byte from the keyboard (0x01)
+/// 
+/// ```
+/// let mut result;
+/// println!("Echo out all text as uppercase");
+/// println!("=================================================")
+/// println!("Type something, press 'enter' to exit");
+/// println!("");
+/// loop {
+///     result = readc();
+///
+///     if result == b'\r' {
+///         println!("");
+///         println!("Have a good day!");
+///         break;
+///     } else if result >= b'a' && result <= b'z'  {
+///         printc(result + b'A' - b'a');
+///     } else {
+///         printc(result);
+///     }
+/// }
+/// ```
+pub fn readc() -> u8 {
+    let character: u8;
+
+    unsafe {
+        asm!(
+            "mov ah, 0x01",
+            "int 0x21",
+            out("al") character
+        )
+    }
+
+    return character
+}
+
+/// Read a string from the user
+/// 
+/// Allows for the user to edit input. From testin in DOSBox, it seems that it's
+/// not possible to fill the entire buffer
+/// 
+/// ```
+///     loop {
+///        println!("Please write 'cats' to exit");
+///        let text = prompt(6);
+///
+///        if text == "cats" {
+///            println!("Thanks for cats!");
+///            break;
+///        }
+///    }
+/// ```
+pub fn prompt(length: u8) -> String {
+    let mut buffer: Vec<u8> = Vec::new();
+    let bytes_read;
+
+    buffer.resize((length + 3) as usize, 0);
+    buffer[0] = length;
+
+    let (segment, address) = ptr_to_segments(buffer.as_ptr() as u32);
+
+    unsafe {
+        asm!(
+            "mov ax, ds",       // We need to move the data segment register to
+            "push ax",          // point to the right part of the heap that is 
+            "add ax, cx",       // holding our buffer
+            "mov ds, ax",
+
+            "mov ah, 0x0a",     
+            "int 0x21",         // Call function
+
+            "pop ax",           // Restore data segment register
+            "mov ds, ax",
+            in("dx") address,
+            in("cx") segment
+        );
+
+        bytes_read = buffer[1] as usize;
+
+        String::from_raw_parts(buffer[2 .. 2 + bytes_read].as_mut_ptr(), bytes_read, bytes_read)
+    }    
 }

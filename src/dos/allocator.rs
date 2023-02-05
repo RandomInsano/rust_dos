@@ -142,6 +142,7 @@ impl DosAllocator {
         unsafe {
             asm!("mov ax, _heap", out("ax") heap_segment_number);
         }
+
         // Compute heap address from segment number
         let heap_addr = ((heap_segment_number & 0xFFFF) << 4) as u32;
         let heap_ptr_as_block = heap_addr as *mut AllocatorBlock;

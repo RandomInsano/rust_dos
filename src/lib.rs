@@ -3,16 +3,16 @@
 //! 
 //! | Code  | Description                                                     |
 //! |-------|-----------------------------------------------------------------|
-//! | 01    | Read character from STDIN                                       |
-//! | 02 ✓  | Write character to STDOUT                                       |
+//! | 01 ✓  | [Read character from STDIN](crate::dos::console::readc)         |
+//! | 02 ✓  | [Write character to STDOUT](crate::dos::console::printc)        |
 //! | 03    | Read character from AUX (serial)                                |
 //! | 04    | Write character to AUX (serial)                                 |
 //! | 05    | Write character to printer                                      |
 //! | 06    | Console Input/Output                                            |
 //! | 07    | Direct character read, no echo                                  |
 //! | 08    | Char read from STDIN, no echo                                   |
-//! | 09 ✓  | Write string to STDOUT                                          |
-//! | 0A    | Buffered input                                                  |
+//! | 09 ✓  | [Write string to STDOUT](crate::dos::console::print)            |
+//! | 0A ✓  | [Buffered input](crate::dos::console::prompt)                   |
 //! | 0B    | Get STDIN status                                                |
 //! | 0C    | Flush buffer from STDIN                                         |
 //! | 0D    | Disk reset                                                      |
@@ -24,7 +24,7 @@
 //! | 2C ✓  | Get system time                                                 |
 //! | 2D ✓  | Set system time                                                 |
 //! | 2E    | Set verify flag                                                 |
-//! | 30 ✓  | Get DOS version                                                 |
+//! | 30 ✓  | [Get DOS version](crate::dos::misc::dos_version)                |
 //! | 35    | Get interrupt vector                                            |
 //! | 36    | Get free disk space                                             |
 //! | 39 ✓  | Create subdirectory                                             |
