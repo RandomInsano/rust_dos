@@ -1,9 +1,8 @@
 use bitflags::bitflags;
 use core::arch::asm;
-use core::cmp::min;
 use crate::dos::error_code::ErrorCode;
 
-use super::datetime::{Date, Time};
+use super::{datetime::{Date, Time}, misc::ptr_to_segments};
 
 extern crate rlibc;
 
@@ -55,25 +54,38 @@ bitflags! {
 /// easier usage and maintenance
 /// 
 /// Returns (ax, cx) registers or an ErrorCode
+/// 
+/// Note: The last character must be a null character or it will refuse to run
+/// with ErrorCode::InvalidParameter
 pub fn file_folder_helper(filename: &str, mode: u8, operation: u8) -> Result<(u16, u16), ErrorCode> {
     let mut error_result: u8;
     let mut error_code: u16;
     let mut result: u16;
 
-    // DOS PATH length limit is 66 bytes.
-    let mut filename_array: [u8; 70] = [0; 70]; // To be sure of the segment
-    for i in 0..min(filename_array.len(), filename.len()) {
-        filename_array[i] = filename.as_bytes()[i];
+    if !filename.ends_with('\0') {
+        return Err(ErrorCode::InvalidParameter);
     }
-    let filename_ptr = filename_array.as_ptr();
+
+    let (segment, offset) = ptr_to_segments(filename.as_ptr() as u32);
+
     unsafe {
         asm!(
+            "mov di, ds",
+            "push di",          // Preserve data segment register
+            "add di, cx",
+            "mov ds, di",       // Offset the segment to where our data is
+
             "int 0x21",
             "setc dl",
             "movzx cx, dl",
+
+            "pop di",           // Restore data segment register
+            "mov ds, di",
+
             in("ah") operation,
             in("al") mode,
-            in("dx") filename_ptr as u16,
+            in("cx") segment,
+            in("dx") offset,
             lateout("dl") error_result,
             lateout("ax") error_code,
             lateout("cx") result);
