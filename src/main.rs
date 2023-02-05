@@ -12,9 +12,12 @@ use rust_dos::bios::{
 };
 use crate::dos_tests::allocator_test::allocator_test;
 use crate::dos_tests::datetime::datetime_test;
-use crate::dos_tests::file::file_read_test;
-use crate::dos_tests::file::file_attribute_test;
-use crate::dos_tests::file::directory_test;
+use crate::dos_tests::file::{
+    file_attribute_test,
+    directory_test,
+    file_read_test,
+    disk_space_test
+};
 use crate::dos_tests::misc::misc_test;
 use crate::dos_tests::console::print_test;
 
@@ -52,6 +55,8 @@ fn main() {
     file_attribute_test();
     println!("-- Directory tests");
     directory_test();
+    println!("-- Disk tests");
+    disk_space_test();
     println!("-- Date/time tests");
     datetime_test();
     println!("-- Misc tests");

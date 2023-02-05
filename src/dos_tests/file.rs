@@ -1,4 +1,4 @@
-use rust_dos::{*, dos::error_code::ErrorCode};
+use rust_dos::{*, dos::{error_code::ErrorCode, file::StorageParameters}};
 
 #[allow(dead_code)]
 pub(crate) fn file_read_test() {
@@ -54,4 +54,22 @@ pub(crate) fn directory_test() {
     print!("Deleting folder {new_path}... ");
     dos::file::Directory::remove(new_path).unwrap();
     println!("Done");
+}
+
+#[allow(dead_code)]
+pub(crate) fn disk_space_test() {
+    // Grab the free and total storage on drive "C:"
+    let parameters = StorageParameters::disk_space(2);
+
+    println!("Disk: {:?}", parameters);
+    print!("Storage on drive C: ");
+
+    match parameters {
+        Ok(x) => {
+            println!("\n   {} total,\n   {} free", x.total_space(), x.free_space());
+        },
+        Err(_) => {
+            println!("Unable to get storage information");
+        }
+    }
 }

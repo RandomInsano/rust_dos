@@ -278,3 +278,53 @@ impl Directory {
         Ok(())
     }
 }
+
+#[derive(Debug, Default)]
+pub struct StorageParameters {
+    total_clusters: u16,
+    bytes_per_sector: u16,
+    available_clusters: u16,
+    sectors_per_cluster: u16,
+}
+
+impl StorageParameters {
+    /// Report total and free disk space. Returns either disk storage
+    /// information or InvalidDrive
+    pub fn disk_space(disk_id: u8) -> Result<Self, ErrorCode> {
+        let mut value = Self::default();
+        
+        unsafe {
+            asm!(
+                "mov ah, 0x36",
+                "int 0x10",
+                in("dl") disk_id,
+                lateout("ax") value.sectors_per_cluster,
+                lateout("bx") value.available_clusters,
+                lateout("cx") value.bytes_per_sector,
+                lateout("dx") value.total_clusters,
+            );
+        }
+
+        if value.sectors_per_cluster == 0xffff {
+            return Err(ErrorCode::InvalidDrive);
+        }
+        
+        Ok(value)
+    }
+
+    /// Calculate free disk space from disk paramters. DOSBox can return more
+    /// than 2GB here so return a 64bit value.
+    pub fn free_space(&self) -> u64 {
+        self.available_clusters as u64 * 
+        self.sectors_per_cluster as u64 * 
+        self.bytes_per_sector as u64
+    }
+
+    /// Calculate total disk space from disk paramters. DOSBox can return more
+    /// than 2GB here so return a 64bit value.
+    pub fn total_space(&self) -> u64 {
+        self.total_clusters as u64 * 
+        self.sectors_per_cluster as u64 * 
+        self.bytes_per_sector as u64
+    }
+} 
