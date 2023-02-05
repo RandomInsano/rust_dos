@@ -208,6 +208,11 @@ impl File {
         Ok(FileAttributes::from_bits_truncate(attributes))
     }
 
+    pub fn delete(filename: &str) -> Result<FileAttributes, ErrorCode> {
+        let (_, attributes) = file_folder_helper(filename,  0x00, 0x41)?;
+        Ok(FileAttributes::from_bits_truncate(attributes))
+    }
+
     pub fn last_write(&self) -> Result<(Date, Time), ErrorCode> {
         let mut date = Date::default();
         let mut time = Time::default();
