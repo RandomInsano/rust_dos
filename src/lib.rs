@@ -3,41 +3,43 @@
 //! 
 //! | Code  | Description                                                     |
 //! |-------|-----------------------------------------------------------------|
-//! | 01 ✓  | [Read character from STDIN](crate::dos::console::readc)         |
-//! | 02 ✓  | [Write character to STDOUT](crate::dos::console::printc)        |
+//! | 01 ✓  | [Read character from STDIN](dos::console::readc)                |
+//! | 02 ✓  | [Write character to STDOUT](dos::console::printc)               |
 //! | 03    | Read character from AUX (serial)                                |
 //! | 04    | Write character to AUX (serial)                                 |
 //! | 05    | Write character to printer                                      |
 //! | 06    | Console Input/Output                                            |
 //! | 07    | Direct character read, no echo                                  |
 //! | 08    | Char read from STDIN, no echo                                   |
-//! | 09 ✓  | [Write string to STDOUT](crate::dos::console::print)            |
-//! | 0A ✓  | [Buffered input](crate::dos::console::prompt)                   |
+//! | 09 ✓  | [Write string to STDOUT](dos::console::print)                   |
+//! | 0A ✓  | [Buffered input](dos::console::prompt)                          |
 //! | 0B    | Get STDIN status                                                |
 //! | 0C    | Flush buffer from STDIN                                         |
 //! | 0D    | Disk reset                                                      |
 //! | 0E    | Select default drive                                            |
 //! | 19    | Get current default drive                                       |
+//! | 1B  ⚠️ | Replaced by 36 (Get free disk space)                            |
+//! | 1C  ⚠️ | Replaced by 36 (Get free disk space)                            |
 //! | 25    | Set interrupt vector                                            |
 //! | 2A ✓  | Get system date                                                 |
 //! | 2B ✓  | Set system date                                                 |
 //! | 2C ✓  | Get system time                                                 |
 //! | 2D ✓  | Set system time                                                 |
 //! | 2E    | Set verify flag                                                 |
-//! | 30 ✓  | [Get DOS version](crate::dos::misc::dos_version)                |
+//! | 30 ✓  | [Get DOS version](dos::misc::dos_version)                       |
 //! | 35    | Get interrupt vector                                            |
-//! | 36    | Get free disk space                                             |
+//! | 36    | [Get free disk space](dos::file::StorageParameters::disk_space) |
 //! | 39 ✓  | Create subdirectory                                             |
 //! | 3A ✓  | Remove subdirectory                                             |
 //! | 3B ✓  | Change current working directory                                |
 //! | 3C    | Create file                                                     |
-//! | 3D ~  | Open file                                                       |
-//! | 3E ✓  | Close file                                                      |
-//! | 3F ✓  | Read file                                                       |
-//! | 40 ✓  | Write file                                                      |
-//! | 41    | Delete file                                                     |
-//! | 42 ✓  | Seek file                                                       |
-//! | 43 ~  | Get/set file attributes                                         |
+//! | 3D ~  | [Open file](dos::file::File::open)                              |
+//! | 3E ✓  | [Close file](dos::file::File::close)                            |
+//! | 3F ✓  | [Read file](dos::file::File::write)                             |
+//! | 40 ✓  | [Write file handle](dos::file::File::write)                     |
+//! | 41    | [Delete file](dos::file::File::delete)                          |
+//! | 42 ✓  | [Seek file](dos::file::File::close)                             |
+//! | 43 ~  | [Get/set file attributes](dos::file::File::attributes)          |
 //! | 47    | Get current directory                                           |
 //! | 4C ✓  | Exit program                                                    |
 //! | 4D    | Get return code                                                 |
