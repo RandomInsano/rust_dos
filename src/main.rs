@@ -10,6 +10,7 @@ use rust_dos::bios::video::{ColorTarget, VesaMode};
 use rust_dos::bios::{
     video,
 };
+use rust_dos::dos::file::{set_verify_writes, verify_writes};
 use crate::dos_tests::allocator_test::allocator_test;
 use crate::dos_tests::datetime::datetime_test;
 use crate::dos_tests::file::{
@@ -47,6 +48,8 @@ fn main() {
     video::set_page(1);
     video::set_palette(ColorTarget::Palette, 5);
 
+    set_verify_writes(true);
+
     println!("-- Allocator tests");
     allocator_test();
     println!("-- File read tests");
@@ -64,4 +67,6 @@ fn main() {
 
     println!("-- Print tests");
     print_test();
+
+    println!("Write verification status: {}", verify_writes());
 }

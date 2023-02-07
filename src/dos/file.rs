@@ -98,6 +98,40 @@ fn file_folder_helper(filename: &str, mode: u8, operation: u8) -> Result<(u16, u
     Ok((error_code, result))
 }
 
+/// Enable global verification of disk writes. This will slow writing down but
+/// ensure blocks have made it to disk.
+pub fn set_verify_writes(enabled: bool) {
+    let state = if enabled {
+        1u8
+    } else {
+        0u8
+    };
+
+    unsafe {
+        asm!(
+            "mov ah, 0x2e",
+            "int 0x10",
+            in("al") state
+        );
+    }
+}
+
+/// Read if DOS is verifying writes. See [set_verify_writes]
+pub fn verify_writes() -> bool {
+    let result: u8;
+
+    unsafe {
+        asm!(
+            "mov ah, 54",
+            "int 0x10",
+            out("al") result
+        );
+    }
+
+    result == 1
+}
+
+
 #[allow(dead_code)]
 #[allow(unused_assignments)]
 impl File {

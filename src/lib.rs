@@ -25,7 +25,7 @@
 //! | 2B ✓  | Set system date                                                 |
 //! | 2C ✓  | Get system time                                                 |
 //! | 2D ✓  | Set system time                                                 |
-//! | 2E    | Set verify flag                                                 |
+//! | 2E ✓  | [Enable write verification](dos::file::set_verify_writes)       |
 //! | 30 ✓  | [Get DOS version](dos::misc::dos_version)                       |
 //! | 35    | Get interrupt vector                                            |
 //! | 36    | [Get free disk space](dos::file::StorageParameters::disk_space) |
@@ -43,7 +43,7 @@
 //! | 47    | Get current directory                                           |
 //! | 4C ✓  | Exit program                                                    |
 //! | 4D    | Get return code                                                 |
-//! | 54    | Get verify flag                                                 |
+//! | 54    | [Check file verification status](dos::file::verify_writes)      |
 //! | 56    | Rename file                                                     |
 //! | 57 ~  | Get/set file date                                               |
 //! 
