@@ -57,7 +57,7 @@ bitflags! {
 /// 
 /// Note: The last character must be a null character or it will refuse to run
 /// with ErrorCode::InvalidParameter
-pub fn file_folder_helper(filename: &str, mode: u8, operation: u8) -> Result<(u16, u16), ErrorCode> {
+fn file_folder_helper(filename: &str, mode: u8, operation: u8) -> Result<(u16, u16), ErrorCode> {
     let mut error_result: u8;
     let mut error_code: u16;
     let mut result: u16;
