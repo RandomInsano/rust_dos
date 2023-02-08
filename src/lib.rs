@@ -65,6 +65,7 @@
 pub mod dos;
 pub mod bios;
 pub mod dpkey;
+pub mod software;
 extern crate rlibc;
 extern crate alloc;
 
