@@ -88,6 +88,14 @@ pub enum VideoMode {
     /// 
     /// Supported adapters: MDA
     Text20x25B2 = 0x07,
+    /// Graphics mode 640x400, 16 colours
+    ///  
+    /// Supported adapters: VGA
+    Graphics640x480C4 = 0x12,
+    /// Graphics mode 320x200, 256 colours
+    /// 
+    /// Supported adapters: VGA
+    Graphics320_200C8 = 0x13,
 }
 
 #[repr(C)]
