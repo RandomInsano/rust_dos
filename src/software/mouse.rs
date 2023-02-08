@@ -59,7 +59,7 @@ impl Mouse {
 
     /// Show the mouse cursor
     /// 
-    /// Note: Graphics may not show cursor until you've uploaded a bitmap
+    /// Note: Graphics may not show while in a VESA resolution
     pub fn cursor_show() {
         unsafe {
             asm!(
@@ -86,6 +86,8 @@ impl Mouse {
     /// 
     /// Example:
     /// ```
+    ///     video::set_video(VideoMode::Graphics640x480C4);
+    /// 
     ///     let result = Mouse::initialize();
     ///     println!("Mouse mode: {:?}", result);
     ///
