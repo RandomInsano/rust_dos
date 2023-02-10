@@ -57,27 +57,57 @@ impl Mouse {
         })
     }
 
-    /// Show the mouse cursor
-    /// 
-    /// Note: Graphics may not show while in a VESA resolution
-    pub fn cursor_show() {
+    fn helper(function: u16, cx: u16, dx: u16) {
         unsafe {
             asm!(
-                "mov ax, 0x0001",
-                "int 0x33"
+                "int 0x33",
+                in("ax") function,
+                in("cx") cx,
+                in("dx") dx,
             );
         }
     }
 
+    /// Show the mouse cursor
+    /// 
+    /// Note: Graphics may not show while in a VESA resolution
+    pub fn cursor_show() {
+        Self::helper(0x0001, 0, 0);
+    }
+
     /// Hide mouse cursor
     pub fn cursor_hide() {
-        unsafe {
-            asm!(
-                "mov ax, 0x0002",
-                "int 0x33"
-            );
-        }
+        Self::helper(0x0002, 0, 0);
     }
+
+    /// Define horizontal and horizontal range of cursor
+    /// 
+    /// Example:
+    /// 
+    /// ```
+    ///     // Make a simple pong-style cursor in CGA mode
+    ///     video::set_video(VideoMode::Graphics320_200C2);
+    ///
+    ///     Mouse::initialize().expect("Microsoft Mouse® driver not loaded");
+    /// 
+    ///     Mouse::cursor_show();
+    ///     Mouse::set_range_vertical(180, 180);
+    ///     Mouse::set_range_horizontal(0, 606);
+    ///     Mouse::set_graphics_cursor(0, 0, &[
+    ///         [0, 0, 0, 0, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff],
+    ///         [0xffff, 0xffff, 0xffff, 0xffff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ///     ]);
+    ///
+    /// ``` 
+    pub fn set_range_horizontal(x_min: u16, x_max: u16) {
+        Self::helper(0x0007, x_min, x_max);
+    }
+
+    /// Define virtical and horizontal range of cursor
+    pub fn set_range_vertical(y_min: u16, y_max: u16) {
+        Self::helper(0x0008, y_min, y_max);
+    }
+
 
     /// Set graphics cursor bitmap
     /// 
@@ -86,10 +116,10 @@ impl Mouse {
     /// 
     /// Example:
     /// ```
-    ///     video::set_video(VideoMode::Graphics640x480C4);
+    /// video::set_video(VideoMode::Graphics640x480C4);
     /// 
-    ///     let result = Mouse::initialize();
-    ///     println!("Mouse mode: {:?}", result);
+    /// let result = Mouse::initialize();
+    /// println!("Mouse mode: {:?}", result);
     ///
     /// Mouse::set_graphics_cursor(0, 0, &[
     ///     [
@@ -147,7 +177,7 @@ impl Mouse {
                 "mov ax, 0x0009",
                 "int 0x33",
 
-                "pop ax",
+                "pop ax",       // Restore ES from the stack
                 "mov es, ax",
                 in("bx") x_point,
                 in("cx") y_point,
