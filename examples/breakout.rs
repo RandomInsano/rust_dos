@@ -23,6 +23,8 @@ use rust_dos::dos::file::{File, SeekFrom};
 use rust_dos::software::mouse::Mouse;
 entry!(main);
 
+const PATH_SPLASH_SCREEN: &str = "examples\\bricks.bmp\0";
+
 #[derive(Debug)]
 #[repr(C, packed)]
 pub struct BitmapFileHeader {
@@ -107,7 +109,6 @@ fn main() {
 
     video::set_video(VideoMode::Graphics320_200C8);
     video::set_cursor_position(0, 0, 20);
-    video::set_page(1);
     
     // Because Rust pointers are referenced based on where the program is loaded
     // in memory, we need to get that offset and do some math on it 
@@ -124,9 +125,9 @@ fn main() {
         header,
         palette,
         image_data
-    ) = read_bitmap("examples\\bricks.bmp\0");
+    ) = read_bitmap(PATH_SPLASH_SCREEN);
 
-    if header.width != 320 || header.height != 200 || header.bpp != 8 || header.compression != 0 {
+    if header.width != 320 || header.bpp != 8 || header.compression != 0 {
         println!("Image dimensions for splash screen are wrong. Exiting");
         return;
     }
@@ -161,10 +162,9 @@ fn main() {
 
     video::set_vga_dac(&vga_dac, 0);
 
-    // Show the first page that's now fill of our picture
-    video::set_page(0);
-
     Mouse::cursor_show();
 
     println!("Done! I hope you enjoyed! \u{1}");
+
+    Mouse::cursor_hide();
 }
