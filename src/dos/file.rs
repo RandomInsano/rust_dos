@@ -2,7 +2,7 @@ use bitflags::bitflags;
 use core::arch::asm;
 use crate::dos::error_code::ErrorCode;
 
-use super::{datetime::{Date, Time}, misc::ptr_to_segments};
+use super::{datetime::{Date, Time}, misc};
 
 extern crate rlibc;
 
@@ -45,6 +45,67 @@ bitflags! {
         const SYSTEM       = 1 << 2;
         const HIDDEN       = 1 << 1;
         const READ_ONLY    = 1;
+        const NORMAL       = 0;
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone)]
+/// How to share the file with other processes
+pub enum SharingMode {
+    Compatibility = 0,
+    DenyBoth = 1,
+    DenyWrite = 2,
+    DenyRead = 3,
+    DenyNone = 4,
+}
+
+impl Default for SharingMode {
+    fn default() -> Self {
+        Self::Compatibility
+    }
+}
+
+#[derive(Clone)]
+#[repr(u8)]
+/// Access Code
+pub enum AccessCode {
+    Read = 0,
+    Write = 1,
+    Both = 2,
+}
+
+#[derive(Clone)]
+pub struct AccessMode {
+    mode: u8,
+}
+
+impl Default for AccessMode {
+    fn default() -> Self {
+        Self {
+            mode: 0
+        }
+    }
+}
+
+impl AccessMode {
+    pub fn new(access: AccessCode, sharing: SharingMode, inherited: bool) -> Self {
+        let mut mode = 0;
+
+        if inherited {
+            mode |= 1 << 7;
+        }
+
+        mode |= (sharing as u8) << 4;
+        mode |= access as u8;
+
+        Self {
+            mode
+        }
+    }
+
+    pub fn bits(&self) -> u8 {
+        self.mode
     }
 }
 
@@ -66,7 +127,7 @@ fn file_folder_helper(filename: &str, mode: u8, operation: u8) -> Result<(u16, u
         return Err(ErrorCode::InvalidParameter);
     }
 
-    let (segment, offset) = ptr_to_segments(filename.as_ptr() as u32);
+    let (segment, offset) = misc::ptr_to_segments(filename.as_ptr() as u32);
 
     unsafe {
         asm!(
@@ -135,67 +196,146 @@ pub fn verify_writes() -> bool {
 #[allow(dead_code)]
 #[allow(unused_assignments)]
 impl File {
-    pub fn open(filename: &str) -> Result<Self, ErrorCode> {
-        let mode = 0x40; // Access and sharing modes? Not sure what this is yet
-        let (handle, _) = file_folder_helper(filename, mode, 0x3d)?;
+    pub fn open(filename: &str, mode: AccessMode) -> Result<Self, ErrorCode> {
+        let (handle, _) = file_folder_helper(filename, mode.bits(), 0x3d)?;
         
         Ok(Self {
             handle,
         })
     }
 
-    pub fn read(&self, buffer: &mut [u8]) -> Result<usize, ErrorCode> {
-        let mut total_bytes_read: usize = 0;
-        for buffer_write_pos in 0..buffer.len() {
-            let mut is_read_success: u16 = 1; // 0: success, 1: fail
-            let mut error_code_or_bytes_read: u16 = 0;
-            let mut tmp_stack_buffer: [u8; 1] = [0; 1]; // To be sure of the segment
-            let tmp_buffer_ptr = tmp_stack_buffer.as_mut_ptr();
-            unsafe {
-                asm!("push ax", "push bx", "push cx", "push dx");
-                asm!("mov cx, 1", "mov ah, 0x3f", "int 0x21", "setc  dl", "movzx cx, dl", in("bx") self.handle, in("dx") tmp_buffer_ptr, lateout("cx") is_read_success, lateout("ax") error_code_or_bytes_read);
-                asm!("pop dx", "pop cx", "pop bx", "pop ax");
-            }
-            if is_read_success == 1 {
-                return Err(ErrorCode::from_u8(error_code_or_bytes_read as u8).unwrap_or(ErrorCode::UnknownError));
-            }
-            if error_code_or_bytes_read == 0 {
-                // End of file
-                break;
-            }
-            //total_bytes_read += error_code_or_bytes_read as usize; // = 1
-            total_bytes_read += 1 as usize;
-            buffer[buffer_write_pos] = tmp_stack_buffer[0];
-        }
+    pub fn create(filename: &str, attributes: FileAttributes) -> Result<Self, ErrorCode> {
+        let mut error_result: u8;
+        let mut result: u16;    
 
-        // fill the rest of the buffer with 0s
-        for buffer_write_pos in total_bytes_read..buffer.len() {
-            buffer[buffer_write_pos] = 0;
+        if !filename.ends_with('\0') {
+            return Err(ErrorCode::InvalidParameter);
         }
-        Ok(total_bytes_read)
+    
+        let (segment, offset) = misc::ptr_to_segments(filename.as_ptr() as u32);
+    
+        unsafe {
+            asm!(
+                "mov di, ds",
+                "push di",          // Preserve data segment register
+                "add di, ax",
+                "mov ds, di",       // Offset the segment to where our data is
+    
+                "mov ah, 3ch",
+                "int 0x21",
+                "setc dl",
+                "movzx cx, dl",
+    
+                "pop di",           // Restore data segment register
+                "mov ds, di",
+    
+                in("ax") segment,
+                in("dx") offset,
+                in("cx") attributes.bits(),
+                lateout("dl") error_result,
+                lateout("ax") result
+            );
+        }
+    
+        if error_result != 0 {
+            return Err(ErrorCode::from_u8(result as u8).unwrap_or(ErrorCode::UnknownError));
+        }
+    
+        Ok(Self {
+            handle: result,
+        })
     }
 
-    // TODO check
+    /// Read a block of data from the currently open file
+    /// 
+    /// Will return [ErrorCode::InsufficientMemory] if the buffer provided
+    /// does not fit in the current memory segment
+    pub fn read(&self, buffer: &mut [u8]) -> Result<usize, ErrorCode> {        
+        // Throw an error if we'd run past the current segment
+        if buffer.len() >= 0xFFF0 {
+            return Err(ErrorCode::InsufficientMemory)
+        }
+
+        let (segment, offset) = misc::ptr_to_segments(buffer.as_ptr() as u32);
+
+        let mut is_read_success: u16 = 1; // 0: success, 1: fail
+        let mut error_code_or_bytes_read: u16 = 0;
+        
+        unsafe {
+            asm!(
+                "mov ax, ds",
+                "push ax",          // Preserve data segment register
+                "add ax, di",
+                "mov ds, ax",       // Offset the segment to where our data is
+
+                "mov ah, 0x3f",
+                "int 0x21",
+
+                "setc dl",
+                "movzx cx, dl",
+
+                "pop di",           // Restore data segment register
+                "mov ds, di",
+        
+                in("cx") buffer.len() as u16,
+                in("bx") self.handle,
+                in("di") segment,
+                in("dx") offset,
+                lateout("cx") is_read_success,
+                lateout("ax") error_code_or_bytes_read
+            );
+        }
+
+        if is_read_success == 1 {
+            return Err(ErrorCode::from_u8(error_code_or_bytes_read as u8).unwrap_or(ErrorCode::UnknownError));
+        }
+
+        Ok(error_code_or_bytes_read as usize)
+    }
+
+    /// Will return [ErrorCode::InsufficientMemory] if the buffer provided
+    /// does not fit in the current memory segment
     pub fn write(&self, buffer: &[u8]) -> Result<usize, ErrorCode> {
-        let mut total_bytes_written: usize = 0;
-        for buffer_read_pos in 0..buffer.len() {
-            let mut is_write_success: u16 = 1; // 0: success, 1: fail
-            let mut error_code_or_bytes_written: u16 = 0;
-            let mut tmp_stack_buffer: [u8; 1] = [0; 1]; // To be sure of the segment
-            tmp_stack_buffer[0] = buffer[buffer_read_pos];
-            let tmp_buffer_ptr = tmp_stack_buffer.as_ptr();
-            unsafe {
-                asm!("push ax", "push bx", "push cx", "push dx");
-                asm!("mov cx, 1", "mov ah, 0x40", "int 0x21", "setc  dl", "movzx cx, dl", in("bx") self.handle, in("dx") tmp_buffer_ptr, lateout("cx") is_write_success, lateout("ax") error_code_or_bytes_written);
-                asm!("pop dx", "pop cx", "pop bx", "pop ax");
-            }
+        // Throw an error if we'd run past the current segment
+        if buffer.len() >= 0xFFF0 {
+            return Err(ErrorCode::InsufficientMemory)
+        }
+
+        let (segment, offset) = misc::ptr_to_segments(buffer.as_ptr() as u32);
+
+        let mut is_write_success: u16 = 1; // 0: success, 1: fail
+        let mut error_code_or_bytes_written: u16 = 0;
+
+        unsafe {
+            asm!(
+                "mov ax, ds",
+                "push ax",          // Preserve data segment register
+                "add ax, di",
+                "mov ds, ax",       // Offset the segment to where our data is
+
+                "mov ah, 0x40",
+                "int 0x21",
+
+                "setc dl",
+                "movzx cx, dl",
+
+                "pop di",           // Restore data segment register
+                "mov ds, di",
+        
+                in("cx") buffer.len() as u16,
+                in("bx") self.handle,
+                in("di") segment,
+                in("dx") offset,
+                lateout("cx") is_write_success,
+                lateout("ax") error_code_or_bytes_written
+            );
+
             if is_write_success == 1 {
                 return Err(ErrorCode::from_u8(error_code_or_bytes_written as u8).unwrap_or(ErrorCode::UnknownError));
             }
-            //total_bytes_written += error_code_or_bytes_written as usize; // = 1
-            total_bytes_written += 1 as usize;
         }
-        Ok(total_bytes_written)
+
+        Ok(error_code_or_bytes_written as usize)
     }
 
     pub fn close(self) -> Result<(), ErrorCode> {
