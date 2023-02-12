@@ -166,5 +166,5 @@ fn main() {
 
     Mouse::cursor_show();
 
-    println!("Done! I hope you enjoyed :)");
+    println!("Done! I hope you enjoyed! \u{1}");
 }
