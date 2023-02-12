@@ -19,11 +19,11 @@ use rust_dos::bios::{
     video,
     video::VideoMode,
 };
-use rust_dos::dos::file::{File, SeekFrom};
+use rust_dos::dos::file::{File, SeekFrom, AccessMode};
 use rust_dos::software::mouse::Mouse;
 entry!(main);
 
-const PATH_SPLASH_SCREEN: &str = "examples\\bricks.bmp\0";
+const PATH_SPLASH_SCREEN: &str = "examples\\clouds.bmp\0";
 
 #[derive(Debug)]
 #[repr(C, packed)]
@@ -64,7 +64,7 @@ fn read_bitmap(filename: &str) -> (BitmapInfoHeader, Vec<BitmapColourEntry>, Vec
     let bitmap_header: BitmapInfoHeader;
     let mut colour_palette: Vec<BitmapColourEntry> = Vec::new();
 
-    let file_handle = File::open(filename).unwrap();
+    let file_handle = File::open(filename, AccessMode::default()).unwrap();
 
     let mut buffer = [0u8; mem::size_of::<BitmapFileHeader>()];
     file_handle.read(&mut buffer).unwrap();
@@ -108,7 +108,9 @@ fn main() {
     let code_segment: u16;
 
     video::set_video(VideoMode::Graphics320_200C8);
-    video::set_cursor_position(0, 0, 20);
+    video::set_cursor_position(0, 13, 20);
+
+    println!("Please wait...");
     
     // Because Rust pointers are referenced based on where the program is loaded
     // in memory, we need to get that offset and do some math on it 
@@ -132,6 +134,18 @@ fn main() {
         return;
     }
 
+    // Set the DAC to show the right colours for the image bitmap
+    // TODO: I think it's possible to define the DAC to be 8bit...
+    let vga_dac: Vec<VgaDacColour> = palette.iter().map(|x| {
+        VgaDacColour {
+            red: x.red / 4,
+            green: x.green / 4,
+            blue: x.blue / 4
+        }
+    }).collect();
+
+    video::set_vga_dac(&vga_dac, 0);
+
     // Copy image data to the video card
     unsafe {
         // Bitmaps' scalines start at the bottom instead of the top and are
@@ -150,21 +164,9 @@ fn main() {
         }
     }
 
-    // Set the DAC to show the right colours for the image bitmap
-    // TODO: I think it's possible to define the DAC to be 8bit...
-    let vga_dac: Vec<VgaDacColour> = palette.iter().map(|x| {
-        VgaDacColour {
-            red: x.red / 4,
-            green: x.green / 4,
-            blue: x.blue / 4
-        }
-    }).collect();
-
-    video::set_vga_dac(&vga_dac, 0);
-
     Mouse::cursor_show();
 
     println!("Done! I hope you enjoyed! \u{1}");
 
-    Mouse::cursor_hide();
+    //Mouse::cursor_hide();
 }
