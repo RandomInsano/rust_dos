@@ -131,6 +131,13 @@ impl Time {
             Err(())
         }
     }
+
+    /// How many whole seconds are in the current time. Epoch is midnight
+    pub fn to_seconds(&self) -> u32 {        
+        self.second as u32 + 
+        self.minute as u32 * 60 + 
+        self.hour as u32 * 60 * 60
+    }
 }
 
 impl core::fmt::Debug for Time {
