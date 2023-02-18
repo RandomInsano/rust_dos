@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod console;
-pub mod allocator;
+//pub mod allocator;
+pub mod new_allocator;
 pub mod io;
 pub mod kbc;
 pub mod datetime;

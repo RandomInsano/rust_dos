@@ -3,15 +3,23 @@ use dos::*;
 
 #[allow(dead_code)]
 pub(crate) fn allocator_test() {
+    print!("Allocating box... ");
     let mut box1 = Box::new(5);
     assert_eq!(*box1, 5);
     *box1 = 10;
     assert_eq!(*box1, 10);
+    println!("Done!");
 
+    print!("Allocating string... ");
     let mut string1 = String::from("konnichiwa");
     assert_eq!(string1, "konnichiwa");
+    println!("Done!");
+
+    print!("Reallocating string... ");
     string1 += " sekai";
     assert_eq!(string1, "konnichiwa sekai");
+    println!("Done!");
+
     let string2 = String::from("こんにちわ 世界!");
     string1 += "! ";
     string1 += &*string2;

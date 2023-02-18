@@ -69,12 +69,12 @@ pub mod software;
 extern crate rlibc;
 extern crate alloc;
 
-use crate::dos::allocator::GLOBAL_ALLOCATOR;
+use crate::dos::new_allocator::GLOBAL_ALLOCATOR;
 
 #[link_section = ".startup"]
 #[no_mangle]
 fn _start() -> ! {
-    unsafe {
+     unsafe {
         GLOBAL_ALLOCATOR.init();
     }
     extern "Rust" {
