@@ -85,6 +85,12 @@ dosbox .
 
 And this will open DOSBox and have the "C:\" drive be the current working directory. It's usually good to do this from another console so you don't have to close DOSBox every time you want to compile your application again.
 
+### Programming pitfalls
+
+Because Rust as a higher level language doesn't have much of a concept of segmented memory, you'll find that using pointers to static memory (like the [Program Segment Prefix](https://stanislavs.org/helppc/program_segment_prefix.html)) will shift out from under you.
+
+Also, memory addresses start from the beginning of the allocated memory so any work you need to do to copy to and from buffers when calling interrupts will need to use `misc::ptr_to_segments`
+
 ### Others
 dpkey module steals key input processing from DOS and converts scan code to ascii code.  
 about scan code: see [PS/2 Keyboard - OSDev Wiki](https://wiki.osdev.org/PS/2_Keyboard).

@@ -9,6 +9,7 @@ pub mod error_code;
 pub mod panic;
 pub mod math;
 pub mod misc;
+pub mod process;
 use core::arch::asm;
 
 pub use alloc::string::String as String;

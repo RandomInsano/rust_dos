@@ -10,18 +10,7 @@ use rust_dos::bios::video::VesaMode;
 use rust_dos::bios::{
     video,
 };
-use rust_dos::dos::file::{set_verify_writes, verify_writes};
-use rust_dos::software::mouse::Mouse;
-use crate::dos_tests::allocator_test::allocator_test;
-use crate::dos_tests::datetime::datetime_test;
-use crate::dos_tests::file::{
-    file_attribute_test,
-    directory_test,
-    file_read_write_test,
-    disk_space_test
-};
-use crate::dos_tests::misc::misc_test;
-use crate::dos_tests::console::print_test;
+use rust_dos::dos::process;
 
 entry!(main);
 
@@ -38,36 +27,17 @@ const PICTURE_DATA: [[u8; 8]; 8] = [
 ];
 
 fn main() {
-    // Set resolution to 800x600x8
-    let mode = VesaMode::new(0x103,
-        false,
-        true,
-        false);
+    // let mode = VesaMode::new(0x103,
+    //     false,
+    //     true,
+    //     false);
 
-    video::set_video_vesa(mode).unwrap();
+    // video::set_video_vesa(mode).unwrap();
 
-    set_verify_writes(true);
+    let psp = process::current_psp();
 
-    let result = Mouse::initialize();
-    println!("Mouse mode: {:?}", result);
+    println!("Command line: {:?}", psp.command_line());
 
-    println!("-- Allocator tests");
-    allocator_test();
-    println!("-- File read tests");
-    file_read_write_test();
-    println!("-- File attribute tests");
-    file_attribute_test();
-    println!("-- Directory tests");
-    directory_test();
-    println!("-- Disk tests");
-    disk_space_test();
-    println!("-- Date/time tests");
-    datetime_test();
-    println!("-- Misc tests");
-    misc_test();
-
-    println!("-- Print tests");
-    print_test();
-
-    println!("Write verification status: {}", verify_writes());
+    println!("PSP: {:?}", psp);
+    println!("Environment: {:#?}", psp.environment());
 }
