@@ -11,10 +11,15 @@ pub(crate) fn allocator_test() {
     assert_eq!(*box1, 10);
     println!("Done!");
 
+    // Debug fun: DS=CS=GS=SS=01DD
+    // Data segment is around 0:90A0
+
     print!("Allocating string... ");
     let mut string1 = String::from("konnichiwa");
     assert_eq!(string1, "konnichiwa");   // 6B 6F 6E 6E
+    // This was found at 0:F1F0 but claims 0:D8D0 / 16 = 0:0D8D
     let mut string4 = String::from("This is a really long string that will hopefully be easier to find");
+    // This was found at 0:1B00 but claims 0:01E0 / 16 = 0:001E
     let mut string5 = "Hello".to_string();
     println!("Done!");
 

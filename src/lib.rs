@@ -74,7 +74,7 @@ use crate::dos::new_allocator::GLOBAL_ALLOCATOR;
 #[link_section = ".startup"]
 #[no_mangle]
 fn _start() -> ! {
-     unsafe {
+    unsafe {
         GLOBAL_ALLOCATOR.init();
     }
     extern "Rust" {
