@@ -1,3 +1,4 @@
+use alloc::string::ToString;
 use rust_dos::*;
 use dos::*;
 
@@ -12,13 +13,19 @@ pub(crate) fn allocator_test() {
 
     print!("Allocating string... ");
     let mut string1 = String::from("konnichiwa");
-    assert_eq!(string1, "konnichiwa");
+    assert_eq!(string1, "konnichiwa");   // 6B 6F 6E 6E
+    let mut string4 = String::from("This is a really long string that will hopefully be easier to find");
+    let mut string5 = "Hello".to_string();
     println!("Done!");
 
     print!("Reallocating string... ");
     string1 += " sekai";
     assert_eq!(string1, "konnichiwa sekai");
     println!("Done!");
+
+    misc::dump_registers();
+    panic!("Beep");
+
 
     let string2 = String::from("こんにちわ 世界!");
     string1 += "! ";

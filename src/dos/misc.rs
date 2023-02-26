@@ -33,6 +33,51 @@ pub fn ptr_to_segments(value: u32) -> (u16, u16) {
     (segment as u16, offset as u16)
 }
 
+pub fn dump_registers() {
+    let mut ax: u16;
+    let mut bx: u16;
+    let mut cx: u16;
+    let mut di: u16;
+    let mut si: u16;
+
+    unsafe {
+        asm!(
+            "and ax, ax",
+            out("ax") ax,
+            out("bx") bx,
+            out("cx") cx,
+            out("di") di,
+        )
+    }
+
+    println!("AX:{:02x} BX:{:02x} CX:{:02x} DI:{:02x}",
+        ax,
+        bx,
+        cx,
+        di,
+    );
+
+    unsafe {
+        asm!(
+            "mov ax, ds",
+            "mov bx, cs",
+            "mov cx, ss",
+            "mov di, es",
+            out("ax") ax,
+            out("bx") bx,
+            out("cx") cx,
+            out("di") di,
+        )
+    }
+
+    println!("DS:{:02x} CS:{:02x} SS:{:02x} ES:{:02x}",
+        ax,
+        bx,
+        cx,
+        di,
+    );
+}
+
 pub fn dos_version() -> VersionInfo {
     let mut version_info = VersionInfo::default();
 

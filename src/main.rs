@@ -39,17 +39,17 @@ const PICTURE_DATA: [[u8; 8]; 8] = [
 
 fn main() {
     // Set resolution to 800x600x8
-    let mode = VesaMode::new(0x103,
-        false,
-        true,
-        false);
+    // let mode = VesaMode::new(0x103,
+    //     false,
+    //     true,
+    //     false);
 
-    video::set_video_vesa(mode).unwrap();
+    // video::set_video_vesa(mode).unwrap();
 
     set_verify_writes(true);
 
-    let result = Mouse::initialize();
-    println!("Mouse mode: {:?}", result);
+    //let result = Mouse::initialize();
+    //println!("Mouse mode: {:?}", result);
 
     println!("-- Allocator tests");
     allocator_test();

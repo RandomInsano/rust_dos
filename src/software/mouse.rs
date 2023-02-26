@@ -12,10 +12,15 @@
 //! | 02   | [Hide mouse cursor](Mouse::cursor_hide)                 |   ✓    |
 //! | ...  |                                                         |   ✓    |
 //! | 09   | [Set graphics cursor](Mouse::set_graphics_cursor)       |   ✓    |
+//!
+//! References:
+//! * http://www.techhelpmanual.com/832-int_33h__mouse_support.html
 
 use core::arch::asm;
 
-use crate::dos::misc::ptr_to_segments;
+use bitflags::bitflags;
+
+use crate::dos::misc::{ptr_to_segments, self};
 
 pub struct Mouse {}
 
@@ -28,6 +33,20 @@ pub enum MouseButtons {
     Logitech = 0x003,
     Unknown,
 }
+
+bitflags! {
+    #[derive(Default)]
+    pub struct Buttons: u16 {
+        const LEFT = 1;
+        const RIGHT = 2;
+        const CENTER = 4;
+    }
+}
+
+pub static mut MASK: u16 = 0;
+pub static mut STAT: u16 = 0;
+pub static mut S_X: u16 = 0;
+pub static mut S_Y: u16 = 0;
 
 impl Mouse {
     /// Reset and read the mouse status. An error result means the driver is
@@ -80,6 +99,30 @@ impl Mouse {
         Self::helper(0x0002, 0, 0);
     }
 
+    /// Get current position and button status
+    pub fn position() -> (u16, u16, Buttons) {
+        let x: u16;
+        let y: u16;
+        let mut buttons = Buttons::default();
+
+        unsafe {
+            asm!(
+                "mov ax, 0x0003",
+                "int 0x33",
+                out("cx") x,
+                out("dx") y,
+                out("bx") buttons.bits
+            );
+        }
+
+        (x, y, buttons)
+    }
+
+    /// Set current position
+    pub fn set_position(x: u16, y: u16) {
+        Self::helper(0x0004, x, y);
+    }
+
     /// Define horizontal and horizontal range of cursor
     /// 
     /// Example:
@@ -107,7 +150,6 @@ impl Mouse {
     pub fn set_range_vertical(y_min: u16, y_max: u16) {
         Self::helper(0x0008, y_min, y_max);
     }
-
 
     /// Set graphics cursor bitmap
     /// 
@@ -185,5 +227,79 @@ impl Mouse {
                 in("dx") offset,
             )
         }
+    }
+
+    /// Get the motion counters (in something called "Mickeys")
+    /// 
+    /// Example:
+    /// ```
+    /// video::set_video(VideoMode::Graphics320_200C2);
+    /// Mouse::initialize().expect("No Microsoft Mouse driver detected");
+    /// Mouse::cursor_show();
+    ///
+    /// println!("Move quickly to the left to exit  :)");
+    /// loop {
+    ///     let (x, y) = Mouse::get_motion();
+    ///
+    ///     if x != 0 || y != 0 {
+    ///         print!("\r{}, {}       ", x, y);
+    ///     }
+    ///
+    ///     if x > 5 {
+    ///         break;
+    ///     }
+    /// }
+    /// ```
+    pub fn get_motion() -> (i16, i16) {
+        let mut x: i16;
+        let mut y: i16;
+
+        unsafe {
+            asm!(
+                "mov ax, 0x000b",
+                "int 0x33",
+                out("cx") x,
+                out("dx") y,
+            );
+        }
+
+        (x, y)
+    }
+
+    /// Register event handler
+    pub fn set_handler() {
+        fn beeps() {
+            unsafe {
+                asm!(
+                    "and ax, ax",
+                    out("ax") MASK,
+                    out("bx") STAT,
+                    out("cx") S_X,
+                    out("dx") S_Y,
+                );
+            }
+        }
+
+        let (segment, offset) = misc::ptr_to_segments(beeps as u32);
+
+        unsafe {
+            asm!(
+                "mov ax, es",   // Stash ES register and change it to point to
+                "push ax",      // an offset from CS
+                "mov ax, cs",
+                "add ax, di",
+                "mov es, ax",
+
+                "mov ax, 0x000c",
+                "int 0x33",
+
+                "pop ax",       // Restore ES from the stack
+                "mov es, ax",
+                in("cx") 0xff,
+                in("di") segment,
+                in("dx") offset,
+            );
+        }
+
     }
 }
