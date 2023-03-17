@@ -470,7 +470,7 @@ impl StorageParameters {
         unsafe {
             asm!(
                 "mov ah, 0x36",
-                "int 0x10",
+                "int 0x21",
                 in("dl") disk_id,
                 lateout("ax") value.sectors_per_cluster,
                 lateout("bx") value.available_clusters,

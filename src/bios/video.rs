@@ -188,6 +188,23 @@ pub struct VgaDacColour {
     pub blue: u8
 }
 
+/// Calculate where the screen memory is in a way Rust can use.
+/// TODO: Actually make this work across different screen modes
+pub fn get_vga_pointer() -> *mut u8 {
+    let code_segment: u16;
+
+    // Because Rust pointers are referenced based on where the program is loaded
+    // in memory, we need to get that offset and do some math on it 
+    unsafe {
+        asm!(
+            "mov ax, cs",
+            out("ax") code_segment
+        );
+    }
+
+    (0xA_0000 - (code_segment as u32 * 16)) as *mut u8
+}
+
 /// Set the current video mode.
 /// 
 /// Warning: Not all modes properly set up the display or clear buffers so you

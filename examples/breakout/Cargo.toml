@@ -1,0 +1,12 @@
+[package]
+name = "breakout"
+version = "0.1.0"
+authors = [
+    "Hayato Ohhashi <o8@vmm.dev>",
+    "Edwin Amsler <edwinguy@gmail.com>"
+]
+edition = "2021"
+
+[dependencies]
+rust_dos = {path = "../.."}
+image_viewer = {path = "../image_viewer"}
