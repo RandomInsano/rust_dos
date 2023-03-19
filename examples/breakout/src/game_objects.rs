@@ -31,8 +31,10 @@ impl Sprite {
 
         if let Some(mask) = &self.mask {
             mask.blit(self.image.rect, surface, point, BlitOperation::And);
+            self.image.blit(self.image.rect, surface, point, BlitOperation::Or);
+        } else {
+            self.image.blit(self.image.rect, surface, point, BlitOperation::Keyed(0));
         }
-        self.image.blit(self.image.rect, surface, point, BlitOperation::Or);
     }
 
     pub fn erase(&self, surface: &mut RawBitmap) {

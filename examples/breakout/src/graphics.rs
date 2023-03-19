@@ -1,11 +1,9 @@
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use image_viewer::bitmap::{BitmapColourEntry, Bitmap};
 use rust_dos::bios::video::VgaDacColour;
-use rust_dos::dos::error_code::ErrorCode;
 use rust_dos::{
     bios::video::get_vga_pointer,
-    print,
-    println
 };
 
 pub fn set_vga_dac(colour_entries: &[BitmapColourEntry]) {
@@ -24,30 +22,13 @@ pub fn set_vga_dac(colour_entries: &[BitmapColourEntry]) {
     rust_dos::bios::video::set_vga_dac(&vga_dac, 0);
 }
 
-pub fn display_image(bitmap: &RawBitmap) -> Result<(), ErrorCode> {
-    let screen_memory = get_vga_pointer();
-    let dimensions = bitmap.rect;
-    let bitmap = &bitmap.bitmap;
-    
-    if dimensions.width != 320 {
-        println!("Image dimensions for splash screen are wrong. Exiting");
-        return Err(ErrorCode::InvalidFormat)
-    }
+pub fn get_framebuffer() -> RawBitmap {
+    let rect = Rect::new(0, 0, 320, 200).unwrap();
+    let bitmap = unsafe {
+        Box::from_raw(get_vga_pointer() as *mut [u8; 320 * 200])
+    };
 
-    // Copy image data to the video card
-    unsafe {
-        let mut image_pointer = bitmap.as_ptr();
-        let mut screen_pointer = screen_memory.clone();
-
-        for _ in 0 .. dimensions.height {
-            screen_pointer.copy_from(image_pointer, 320);
-
-            screen_pointer = screen_pointer.add(320);
-            image_pointer = image_pointer.add(320)
-        }
-    }
-
-    Ok(())
+    RawBitmap { rect, bitmap }
 }
 
 #[derive(Copy, Clone)]
@@ -139,13 +120,15 @@ impl Rect {
 /// instances of itself
 pub struct RawBitmap {
     pub(crate) rect: Rect,
-    pub(crate) bitmap: &[u8]
+    pub(crate) bitmap: Box<[u8]>
 }
 
 pub enum BlitOperation {
     And,
     Or,
     Direct,
+    /// The value provided here is considered the transparency colour
+    Keyed(u8),
 }
 
 impl From<Bitmap> for RawBitmap {
@@ -174,12 +157,12 @@ impl From<Bitmap> for RawBitmap {
             index_buffer -= width;
         }
 
-        RawBitmap::new(rect, Vec::from(buffer))
+        RawBitmap::new(rect, buffer.into_boxed_slice())
     }
 }
 
 impl RawBitmap {
-    pub fn new(rect: Rect, bitmap: Vec<u8>) -> Self {
+    pub fn new(rect: Rect, bitmap: Box<[u8]>) -> Self {
         Self {
             rect,
             bitmap,
@@ -189,7 +172,7 @@ impl RawBitmap {
     pub fn new_blank(buffer_rect: Rect) -> Self {
         let mut buffer_data = Vec::new();
         buffer_data.resize((buffer_rect.width * buffer_rect.height) as usize, 0u8);
-        RawBitmap::new(buffer_rect, buffer_data)
+        RawBitmap::new(buffer_rect, buffer_data.into_boxed_slice())
     }
 
     pub fn blit(&self, source_rect: Rect, destination: &mut Self, destination_point: Point, operation: BlitOperation) {
@@ -222,6 +205,21 @@ impl RawBitmap {
         
                     for x in 0 .. width {
                         dest_row[x] = dest_row[x] | src_row[x];
+                    }
+        
+                    src_offset += src_step;
+                    dest_offset += dest_step;
+                }        
+            },
+            BlitOperation::Keyed(transparency) => {
+                for _ in 0..source_rect.height {
+                    let src_row = &self.bitmap[src_offset..src_offset + width];
+                    let dest_row = &mut destination.bitmap[dest_offset..dest_offset + width];
+        
+                    for x in 0 .. width {
+                        if src_row[x] != transparency {
+                            dest_row[x] = src_row[x];
+                        }
                     }
         
                     src_offset += src_step;

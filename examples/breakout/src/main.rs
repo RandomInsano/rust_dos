@@ -16,8 +16,6 @@ use image_viewer::bitmap::Bitmap;
 use graphics::{
     Rect,
     RawBitmap,
-    set_vga_dac,
-    display_image,
 };
 use rust_dos::*;
 use rust_dos::bios::{
@@ -30,18 +28,15 @@ use crate::graphics::{Point, BlitOperation};
 
 const PATH_SPLASH_SCREEN: &str = ".\\clouds.bmp\0";
 const PATH_ASSETS: &str = ".\\assets.bmp\0";
-const PATH_ASSETS_MASK: &str = ".\\assetsm.bmp\0";
 
-fn create_ball<'a>(assets: RawBitmap, mask: RawBitmap) -> Sprite {
+fn create_ball<'a>(assets: RawBitmap) -> Sprite {
     let ball_rect = Rect::new(0, 0, 10, 10).unwrap();
     let dest_point = Point::new(0, 0);
     let mut ball_image = RawBitmap::new_blank(ball_rect);
-    let mut ball_mask = RawBitmap::new_blank(ball_rect);
 
     assets.blit(ball_image.rect, &mut ball_image, dest_point.clone(), BlitOperation::Direct);
-    mask.blit(ball_mask.rect, &mut ball_mask, dest_point, BlitOperation::Direct);
 
-    Sprite::new(ball_rect, ball_image, Some(ball_mask))
+    Sprite::new(ball_rect, ball_image, None)
 }
 
 fn main() {
@@ -57,14 +52,15 @@ fn main() {
     println!("Please wait...");
     
     let bitmap_assets = RawBitmap::from(Bitmap::load(PATH_ASSETS).unwrap());
-    let bitmap_assets_mask = RawBitmap::from(Bitmap::load(PATH_ASSETS_MASK).unwrap());
     let bitmap_background = Bitmap::load(PATH_SPLASH_SCREEN).unwrap();
-    set_vga_dac(bitmap_background.palette());
+    graphics::set_vga_dac(bitmap_background.palette());
     
-    let mut bitmap_background = RawBitmap::from(bitmap_background);
-    //let mut bitmap_background = RawBitmap::new_blank(Rect::new(0, 0, 320, 200).unwrap());
+    let bitmap_background = RawBitmap::from(bitmap_background);
+    let mut bitmap_framebuffer = graphics::get_framebuffer();
 
-    let mut ball = create_ball(bitmap_assets, bitmap_assets_mask);
+    bitmap_background.blit(bitmap_background.rect, &mut bitmap_framebuffer, bitmap_background.rect.location(), BlitOperation::Direct);
+
+    let mut ball = create_ball(bitmap_assets);
     let mut ball_rect;
 
     loop {
@@ -73,6 +69,8 @@ fn main() {
         ball_rect = ball.image_rect();
         ball_rect.x = ball_x as i32;
         ball_rect.y = ball_y as i32;
+
+        ball.draw(&mut bitmap_framebuffer, ball_rect.location());
 
         // Bounce if we hit an edge. Not well, but bounce
         if let Some(interection) = ball_rect.intersection(&screen_rect) {
@@ -85,11 +83,7 @@ fn main() {
             }
         }
 
-        ball.draw(&mut bitmap_background, ball_rect.location());
-
-        display_image(&bitmap_background).unwrap();
-
-        ball.erase(&mut bitmap_background);
+        ball.erase(&mut bitmap_framebuffer);
     }
 
     //println!("Done! I hope you enjoyed! \u{1}");
