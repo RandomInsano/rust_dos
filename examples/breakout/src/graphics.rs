@@ -31,7 +31,7 @@ pub fn get_framebuffer() -> RawBitmap {
     RawBitmap { rect, bitmap }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point {
     pub(crate) x: i32,
     pub(crate) y: i32,
@@ -42,6 +42,28 @@ impl Point {
         Self {
             x,
             y
+        }
+    }
+}
+
+impl core::ops::Div for Point {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+        }
+    }
+}
+
+impl core::ops::Mul for Point {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x * rhs.y,
+            y: self.y * rhs.y
         }
     }
 }
@@ -111,8 +133,29 @@ impl Rect {
         }
     }
 
+    pub fn offset(&mut self, distance: Point) {
+        self.x += distance.x;
+        self.y += distance.y;
+    }
+
     pub fn location(&self) -> Point {
         Point::new(self.x, self.y)
+    }
+
+    pub fn upper_left(&self) -> Point {
+        self.location()
+    }
+
+    pub fn upper_right(&self) -> Point {
+        Point::new(self.x + self.width, self.y)
+    }
+
+    pub fn lower_left(&self) -> Point {
+        Point::new(self.x, self.y + self.height)
+    }
+
+    pub fn lower_right(&self) -> Point {
+        Point::new(self.x + self.width, self.y + self.height)
     }
 }
 
@@ -173,6 +216,25 @@ impl RawBitmap {
         let mut buffer_data = Vec::new();
         buffer_data.resize((buffer_rect.width * buffer_rect.height) as usize, 0u8);
         RawBitmap::new(buffer_rect, buffer_data.into_boxed_slice())
+    }
+
+    /// Rotate the pixels in the current rect by colour amount. If the result is
+    /// more than 255 it will wrap around so to shift the palette in the
+    /// opposite direction provide a value of (255 - amount).
+    pub fn shift_colour(&mut self, rect: Rect, colour: u8) {
+        let step = self.rect.width as usize;
+        let width = rect.width as usize;
+        let mut offset = (rect.y as usize * step) + rect.x as usize;
+
+        for _ in 0..rect.height {
+            let row = &mut self.bitmap[offset..offset + width];
+
+            for x in 0 .. width {
+                row[x] = row[x].wrapping_add(colour);
+            }
+
+            offset += step;
+        }        
     }
 
     pub fn blit(&self, source_rect: Rect, destination: &mut Self, destination_point: Point, operation: BlitOperation) {
@@ -274,7 +336,7 @@ impl Sprite {
             self.image.blit(self.image.rect, surface, point, BlitOperation::Or);
         } else {
             // Draw using an indexed colour (fixed to 0 at the moment)
-            self.image.blit(self.image.rect, surface, point, BlitOperation::Keyed(0));
+            self.image.blit(self.image.rect, surface, point, BlitOperation::Keyed(255));
         }
     }
 

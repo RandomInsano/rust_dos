@@ -1,7 +1,5 @@
 use alloc::vec::Vec;
-use rust_dos::{println, print};
-
-use crate::graphics::{RawBitmap, Point, BlitOperation};
+use crate::graphics::{RawBitmap, Point, BlitOperation, Rect};
 
 pub struct BrickGraphics {
     /// Store a variety of bricks. Broken into left side, right side, and square
@@ -27,9 +25,15 @@ impl BrickGraphics {
 
         // Format index 0 is reserved
         let format = (brick.format_raw() - 1) as usize;
+        // Same for type. Zero is considered 'none'
+        let brick_palette_offset = (brick.brick_type() - 1) * 6;
 
         let image = &self.images[self.index as usize][format];
-        image.blit(image.rect, surface, point, BlitOperation::Keyed(0));
+        image.blit(image.rect, surface, point, BlitOperation::Keyed(255));
+
+        // Shift colour palette depending on brick type
+        let rect = Rect::new(point.x, point.y, image.rect.width, image.rect.height).unwrap();
+        surface.shift_colour(rect, brick_palette_offset);
 
         self.index = (self.index + 1) % self.images.len() as u8;
     }
