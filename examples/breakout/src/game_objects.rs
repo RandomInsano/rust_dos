@@ -5,14 +5,14 @@ pub struct BrickGraphics {
     /// Store a variety of bricks. Broken into left side, right side, and square
     images: Vec<Vec<RawBitmap>>,
     /// The brick to draw
-    index: u8,
+    rand: RandomNumberGenerator,
 }
 
 impl BrickGraphics {
     pub fn new(images: Vec<Vec<RawBitmap>>) -> Self {
         Self {
             images,
-            index: 0
+            rand: RandomNumberGenerator::new(13145, 535)
         }
     }
 
@@ -27,15 +27,15 @@ impl BrickGraphics {
         let format = (brick.format_raw() - 1) as usize;
         // Same for type. Zero is considered 'none'
         let brick_palette_offset = (brick.brick_type() - 1) * 6;
+        // Grab a random number for which half of the brick to draw
+        let index = self.rand.next() as usize % self.images.len();
 
-        let image = &self.images[self.index as usize][format];
+        let image = &self.images[index][format];
         image.blit(image.rect, surface, point, BlitOperation::Keyed(255));
 
         // Shift colour palette depending on brick type
         let rect = Rect::new(point.x, point.y, image.rect.width, image.rect.height).unwrap();
         surface.shift_colour(rect, brick_palette_offset);
-
-        self.index = (self.index + 1) % self.images.len() as u8;
     }
 }
 
@@ -132,5 +132,43 @@ impl Brick {
 
         self.data &= !BRICK_TYPE_MASK;
         self.data |= value
+    }
+}
+
+/// I asked ChatGPT to write me a Permuted Congruential Generator random number
+/// generator. I also asked to write a LCG but that didn't work when doing the
+/// modulo of smaller numbers like I needed for bricks
+/// https://en.wikipedia.org/wiki/Permuted_congruential_generator
+struct RandomNumberGenerator {
+    state: u64,
+    inc: u64,
+}
+
+impl RandomNumberGenerator {
+    /// Create a new PGC instance
+    fn new(seed: u64, seq: u64) -> Self {
+        let mut rng = Self { state: 0, inc: (seq << 1) | 1 };
+        rng.seed(seed);
+        rng
+    }
+
+    fn seed(&mut self, seed: u64) {
+        self.state = 0;
+        self.inc = self.inc
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        self.state = self.state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(self.inc)
+            .wrapping_add(seed);
+    }
+
+    // Generate the next random number
+    fn next(&mut self) -> u32 {
+        let old_state = self.state;
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(self.inc);
+        let xor_shifted = (((old_state >> 18) ^ old_state) >> 27) as u32;
+        let rot = (old_state >> 59) as u32;
+        (xor_shifted >> rot) | (xor_shifted << ((-(rot as i32)) & 31))
     }
 }
